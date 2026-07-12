@@ -1,37 +1,40 @@
 const Vehicle = require("../models/Vehicle");
 
-// Add Vehicle
-exports.addVehicle = async (req, res) => {
+exports.getVehicles = async (req, res) => {
     try {
-
-        const vehicle = await Vehicle.create(req.body);
-
-        res.status(201).json(vehicle);
-
+        const vehicles = await Vehicle.find();
+        res.json(vehicles);
     } catch (err) {
-
-        res.status(500).json({
-            message: err.message
-        });
-
+        res.status(500).json({ message: err.message });
     }
 };
 
-// Get All Vehicles
-exports.getVehicles = async (req, res) => {
-
+exports.addVehicle = async (req, res) => {
     try {
+        const vehicle = await Vehicle.create(req.body);
+        res.status(201).json(vehicle);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
-        const vehicles = await Vehicle.find();
+exports.deleteVehicle = async (req, res) => {
+    try {
+        const vehicle = await Vehicle.findByIdAndDelete(req.params.id);
 
-        res.json(vehicles);
+        if (!vehicle) {
+            return res.status(404).json({
+                message: "Vehicle not found"
+            });
+        }
+
+        res.json({
+            message: "Vehicle deleted successfully"
+        });
 
     } catch (err) {
-
         res.status(500).json({
             message: err.message
         });
-
     }
-
 };

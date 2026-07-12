@@ -10,7 +10,7 @@
       rel="stylesheet"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide-static/0.383.0/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
       :root {
         --primary: #1e3a8a;
@@ -1292,224 +1292,7 @@
     </div>
 
     <script>
-      function filterVehicles() {
-
-          const keyword = document.getElementById("vehicleSearch").value.toLowerCase();
-          const type = document.getElementById("typeFilter").value;
-          const status = document.getElementById("statusFilter").value;
-
-          const rows = document.querySelectorAll("tbody tr");
-
-          rows.forEach(row => {
-
-            const rowText = row.innerText.toLowerCase();
-
-            const rowType = row.cells[1].innerText.trim();
-
-            const rowStatus = row.cells[2].innerText.trim();
-
-            const searchMatch = rowText.includes(keyword);
-
-            const typeMatch = type === "all" || rowType === type;
-
-            const statusMatch = status === "all" || rowStatus === status;
-
-            if (searchMatch && typeMatch && statusMatch) {
-              row.style.display = "";
-            } else {
-              row.style.display = "none";
-            }
-
-          });
-
-        }
-      function searchVehicle() {
-
-          const keyword = document
-            .getElementById("vehicleSearch")
-            .value
-            .toLowerCase();
-
-          const rows = document.querySelectorAll("tbody tr");
-
-          rows.forEach(row => {
-
-            const text = row.innerText.toLowerCase();
-
-            if (text.includes(keyword)) {
-              row.style.display = "";
-            } else {
-              row.style.display = "none";
-            }
-
-          });
-
-        }
-    async function saveVehicle() {
-
-        const vehicle = {
-
-          name: document.getElementById("vehicleName").value,
-
-          reg: document.getElementById("vehicleReg").value,
-
-          type: document.getElementById("vehicleType").value,
-
-          capacity: document.getElementById("vehicleCapacity").value,
-
-          insurance: document.getElementById("vehicleInsurance").value,
-
-          fitness: document.getElementById("vehicleFitness").value,
-
-          notes: document.getElementById("vehicleNotes").value
-
-        };
-
-        const response = await fetch("http://localhost:5000/api/vehicles", {
-
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json"
-          },
-
-          body: JSON.stringify(vehicle)
-
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-
-          alert("Vehicle Added Successfully");
-
-          closeModal("vehicleModal");
-
-          loadVehicles();
-
-        } else {
-
-          alert(data.message);
-
-        }
-
-      }
-      async function loadVehicles() {
-
-          const response = await fetch("http://localhost:5000/api/vehicles");
-
-          vehicles = await response.json();
-
-          navigate("fleet");
-
-        }
-      function viewTrip(id) {
-        const trip = trips.find((t) => t.id === id);
-
-        alert(`
-Trip ID : ${trip.id}
-Driver : ${trip.driver}
-Vehicle : ${trip.vehicle}
-Status : ${trip.status}
-Distance : ${trip.distance}
-    `);
-      }
-
-      function safeIcons() {
-        try {
-          if (typeof lucide !== "undefined") lucide.createIcons();
-        } catch (e) {
-          console.warn("icon render skipped", e);
-        }
-      }
-      safeIcons();
-
-      /* ---------------- DATA ---------------- */
-      const roleLabels = {
-        admin: "Admin / Owner",
-        fleet_manager: "Fleet Manager",
-        driver: "Driver",
-        accountant: "Accountant",
-      };
-      let currentRole = "";
-
-      const navConfig = {
-        admin: [
-          {
-            section: "Overview",
-            links: [["dashboard", "layout-dashboard", "Dashboard"]],
-          },
-          {
-            section: "Operations",
-            links: [
-              ["fleet", "truck", "Fleet Management"],
-              ["drivers", "users", "Driver Management"],
-              ["trips", "route", "Trip Management"],
-            ],
-          },
-          {
-            section: "Costs",
-            links: [
-              ["fuel", "fuel", "Fuel Logs"],
-              ["maintenance", "wrench", "Maintenance"],
-              ["expenses", "receipt", "Expenses"],
-            ],
-          },
-          {
-            section: "Insights",
-            links: [
-              ["reports", "bar-chart-3", "Reports & Analytics"],
-              ["design", "palette", "Design System"],
-            ],
-          },
-        ],
-        fleet_manager: [
-          {
-            section: "Overview",
-            links: [["dashboard", "layout-dashboard", "Dashboard"]],
-          },
-          {
-            section: "Operations",
-            links: [
-              ["fleet", "truck", "Fleet Management"],
-              ["drivers", "users", "Driver Management"],
-              ["trips", "route", "Trip Management"],
-            ],
-          },
-          {
-            section: "Costs",
-            links: [
-              ["fuel", "fuel", "Fuel Logs"],
-              ["maintenance", "wrench", "Maintenance"],
-            ],
-          },
-        ],
-        driver: [
-          {
-            section: "My Work",
-            links: [
-              ["dashboard", "layout-dashboard", "Dashboard"],
-              ["trips", "route", "My Trips"],
-              ["fuel", "fuel", "Fuel Logs"],
-            ],
-          },
-          { section: "Account", links: [["profile", "user", "My Profile"]] },
-        ],
-        accountant: [
-          {
-            section: "Overview",
-            links: [["dashboard", "layout-dashboard", "Dashboard"]],
-          },
-          {
-            section: "Finance",
-            links: [
-              ["expenses", "receipt", "Expenses"],
-              ["fuel", "fuel", "Fuel Costs"],
-              ["reports", "bar-chart-3", "Reports & Analytics"],
-            ],
-          },
-        ],
-      };
+     
 
       const vehicles = [
         {
@@ -1743,6 +1526,279 @@ Distance : ${trip.distance}
         },
       ];
 
+       async function deleteVehicle(id) {
+
+          if (!confirm("Delete this vehicle?")) return;
+
+          const response = await fetch(`http://localhost:5000/api/vehicles/${id}`, {
+            method: "DELETE"
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            alert(data.message);
+            await loadVehicles();
+          } else {
+            alert(data.message);
+          }
+        }
+        function editVehicle(reg) {
+
+          const vehicle = vehicles.find(v => v.reg === reg);
+
+          if (!vehicle) {
+            alert("Vehicle not found");
+            return;
+          }
+
+          document.getElementById("vehicleReg").value = vehicle.reg;
+          document.getElementById("vehicleName").value = vehicle.name;
+          document.getElementById("vehicleType").value = vehicle.type;
+          document.getElementById("vehicleCapacity").value = vehicle.capacity;
+          document.getElementById("vehicleInsurance").value = vehicle.insurance;
+          document.getElementById("vehicleFitness").value = vehicle.fitness;
+          document.getElementById("vehicleNotes").value = vehicle.notes;
+
+          openModal("vehicleModal");
+        }
+        function viewVehicle(reg) {
+
+          const vehicle = vehicles.find(v => v.reg === reg);
+
+          if (!vehicle) {
+            alert("Vehicle not found");
+            return;
+          }
+
+          alert(`
+Vehicle : ${vehicle.name}
+Registration : ${vehicle.reg}
+Type : ${vehicle.type}
+Driver : ${vehicle.driver}
+Status : ${vehicle.status}
+Insurance : ${vehicle.insurance}
+`);
+
+        }
+        function filterVehicles() {
+
+          const keyword = document.getElementById("vehicleSearch").value.toLowerCase();
+          const type = document.getElementById("typeFilter").value;
+          const status = document.getElementById("statusFilter").value;
+
+          const rows = document.querySelectorAll("tbody tr");
+
+          rows.forEach(row => {
+
+            const rowText = row.innerText.toLowerCase();
+
+            const rowType = row.cells[1].innerText.trim();
+
+            const rowStatus = row.cells[2].innerText.trim();
+
+            const searchMatch = rowText.includes(keyword);
+
+            const typeMatch = type === "all" || rowType === type;
+
+            const statusMatch = status === "all" || rowStatus === status;
+
+            if (searchMatch && typeMatch && statusMatch) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+
+          });
+
+        }
+        function searchVehicle() {
+
+          const keyword = document
+            .getElementById("vehicleSearch")
+            .value
+            .toLowerCase();
+
+          const rows = document.querySelectorAll("tbody tr");
+
+          rows.forEach(row => {
+
+            const text = row.innerText.toLowerCase();
+
+            if (text.includes(keyword)) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+
+          });
+
+        }
+        async function saveVehicle() {
+
+          const vehicle = {
+
+            name: document.getElementById("vehicleName").value,
+
+            reg: document.getElementById("vehicleReg").value,
+
+            type: document.getElementById("vehicleType").value,
+
+            capacity: document.getElementById("vehicleCapacity").value,
+
+            insurance: document.getElementById("vehicleInsurance").value,
+
+            fitness: document.getElementById("vehicleFitness").value,
+
+            notes: document.getElementById("vehicleNotes").value
+
+          };
+
+          const response = await fetch("http://localhost:5000/api/vehicles", {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(vehicle)
+
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+
+            alert("Vehicle Added Successfully");
+
+            closeModal("vehicleModal");
+
+            loadVehicles();
+
+          } else {
+
+            alert(data.message);
+
+          }
+
+        }
+        async function loadVehicles() {
+
+          const response = await fetch("http://localhost:5000/api/vehicles");
+
+          vehicles = await response.json();
+
+          navigate("fleet");
+
+        }
+        function viewTrip(id) {
+          const trip = trips.find((t) => t.id === id);
+
+          alert(`
+Trip ID : ${trip.id}
+Driver : ${trip.driver}
+Vehicle : ${trip.vehicle}
+Status : ${trip.status}
+Distance : ${trip.distance}
+    `);
+        }
+
+        function safeIcons() {
+          try {
+            if (typeof lucide !== "undefined") lucide.createIcons();
+          } catch (e) {
+            console.warn("icon render skipped", e);
+          }
+        }
+        safeIcons();
+
+        /* ---------------- DATA ---------------- */
+        const roleLabels = {
+          admin: "Admin / Owner",
+          fleet_manager: "Fleet Manager",
+          driver: "Driver",
+          accountant: "Accountant",
+        };
+        let currentRole = "";
+
+        const navConfig = {
+          admin: [
+            {
+              section: "Overview",
+              links: [["dashboard", "layout-dashboard", "Dashboard"]],
+            },
+            {
+              section: "Operations",
+              links: [
+                ["fleet", "truck", "Fleet Management"],
+                ["drivers", "users", "Driver Management"],
+                ["trips", "route", "Trip Management"],
+              ],
+            },
+            {
+              section: "Costs",
+              links: [
+                ["fuel", "fuel", "Fuel Logs"],
+                ["maintenance", "wrench", "Maintenance"],
+                ["expenses", "receipt", "Expenses"],
+              ],
+            },
+            {
+              section: "Insights",
+              links: [
+                ["reports", "bar-chart-3", "Reports & Analytics"],
+                ["design", "palette", "Design System"],
+              ],
+            },
+          ],
+          fleet_manager: [
+            {
+              section: "Overview",
+              links: [["dashboard", "layout-dashboard", "Dashboard"]],
+            },
+            {
+              section: "Operations",
+              links: [
+                ["fleet", "truck", "Fleet Management"],
+                ["drivers", "users", "Driver Management"],
+                ["trips", "route", "Trip Management"],
+              ],
+            },
+            {
+              section: "Costs",
+              links: [
+                ["fuel", "fuel", "Fuel Logs"],
+                ["maintenance", "wrench", "Maintenance"],
+              ],
+            },
+          ],
+          driver: [
+            {
+              section: "My Work",
+              links: [
+                ["dashboard", "layout-dashboard", "Dashboard"],
+                ["trips", "route", "My Trips"],
+                ["fuel", "fuel", "Fuel Logs"],
+              ],
+            },
+            { section: "Account", links: [["profile", "user", "My Profile"]] },
+          ],
+          accountant: [
+            {
+              section: "Overview",
+              links: [["dashboard", "layout-dashboard", "Dashboard"]],
+            },
+            {
+              section: "Finance",
+              links: [
+                ["expenses", "receipt", "Expenses"],
+                ["fuel", "fuel", "Fuel Costs"],
+                ["reports", "bar-chart-3", "Reports & Analytics"],
+              ],
+            },
+          ],
+        };
       /* ---------------- STATUS HELPERS ---------------- */
       function statusBadge(status) {
         const map = {
@@ -2129,7 +2185,23 @@ Distance : ${trip.distance}
       <td>${statusBadge(v.status)}</td>
       <td>${v.driver}</td>
       <td>${v.insurance}</td>
-      ${canWrite ? `<td><div class="row-actions"><button onclick="viewTrip('${v.id}')" class="mini-btn" data-lucide="eye"></button><button onclick="viewTrip('${v.id}')" class="mini-btn" data-lucide="pencil"></button><button onclick="viewTrip('${v.id}')" class="mini-btn" data-lucide="trash-2"></button></div></td>` : ""}
+      ${canWrite ? `<td>
+  <div class="row-actions">
+
+    <button class="mini-btn" onclick="viewVehicle('${v.reg}')">
+      <i data-lucide="eye"></i>
+    </button>
+
+    <button class="mini-btn" onclick="editVehicle('${v.reg}')">
+      <i data-lucide="pencil"></i>
+    </button>
+
+    <button class="mini-btn" onclick="deleteVehicle('${v._id}')">
+      <i data-lucide="trash-2"></i>
+    </button>
+
+  </div>
+</td>` : ""}
     </tr>`,
           )
           .join("");
