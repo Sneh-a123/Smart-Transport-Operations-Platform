@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransitOps — Fleet Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide-static/0.383.0/umd/lucide.min.js"></script>
+<style>
+:root{
+  --primary:#1E3A8A;
+  --primary-light:#3B82F6;
+  --primary-dark:#152a63;
+  --accent:#F59E0B;
+  --accent-dark:#D97706;
+  --success:#16A34A;
+  --success-bg:#DCFCE7;
+  --danger:#DC2626;
+  --danger-bg:#FEE2E2;
+  --warning-bg:#FEF3C7;
+  --info-bg:#DBEAFE;
+  --bg:#F8FAFC;
+  --card:#FFFFFF;
+  --text:#1E293B;
+  --text-secondary:#64748B;
+  --border:#E2E8F0;
+  --radius:10px;
+  --shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:0 4px 12px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+input,select{font-family:inherit;}
+::selection{background:var(--accent);color:#fff;}
+
+/* ---------- AUTH SCREENS ---------- */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:
+  radial-gradient(circle at 20% 20%, rgba(30,58,138,.06), transparent 40%),
+  radial-gradient(circle at 80% 80%, rgba(245,158,11,.08), transparent 40%), var(--bg);padding:20px;}
+.auth-card{background:var(--card);width:100%;max-width:400px;border-radius:16px;box-shadow:var(--shadow-md);padding:40px 36px;border:1px solid var(--border);}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.auth-logo .mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--primary-light));display:flex;align-items:center;justify-content:center;color:#fff;}
+.auth-logo span{font-weight:800;font-size:18px;letter-spacing:-.02em;}
+.auth-card h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.02em;}
+.auth-card p.sub{color:var(--text-secondary);font-size:13px;margin-bottom:24px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;color:var(--text);}
+.field input, .field select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:#fff;transition:border-color .15s;}
+.field input:focus, .field select:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;transition:.15s;}
+.btn-primary{background:var(--primary);color:#fff;width:100%;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent:hover{background:var(--accent-dark);}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);}
+.btn-ghost:hover{background:var(--bg);}
+.auth-foot{margin-top:20px;text-align:center;font-size:13px;color:var(--text-secondary);}
+.auth-foot a{color:var(--primary);font-weight:600;}
+.forgot-link{display:block;text-align:right;font-size:12.5px;color:var(--primary-light);font-weight:600;margin:-8px 0 16px;}
+.role-badge-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.role-chip{font-size:11px;padding:4px 9px;border-radius:20px;background:var(--info-bg);color:var(--primary);font-weight:600;}
+
+/* ---------- APP LAYOUT ---------- */
+.app{display:none;min-height:100vh;}
+.app.active{display:flex;}
+.sidebar{width:240px;background:var(--primary);color:#fff;flex-shrink:0;display:flex;flex-direction:column;transition:width .2s;}
+.sidebar.collapsed{width:72px;}
+.sb-head{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-head .mark{width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-head span{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;}
+.sidebar.collapsed .sb-head span{display:none;}
+.sb-nav{flex:1;padding:14px 10px;overflow-y:auto;}
+.sb-section-label{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.45);padding:14px 10px 6px;text-transform:uppercase;}
+.sidebar.collapsed .sb-section-label{display:none;}
+.sb-link{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:8px;color:rgba(255,255,255,.75);font-size:13.5px;font-weight:500;margin-bottom:2px;transition:.12s;white-space:nowrap;overflow:hidden;}
+.sb-link svg{flex-shrink:0;width:18px;height:18px;}
+.sb-link:hover{background:rgba(255,255,255,.08);color:#fff;}
+.sb-link.active{background:var(--accent);color:#fff;font-weight:600;}
+.sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.1);}
+.sb-role-tag{font-size:11px;background:rgba(255,255,255,.1);padding:6px 10px;border-radius:6px;color:rgba(255,255,255,.8);text-align:center;white-space:nowrap;overflow:hidden;}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.navbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;position:sticky;top:0;z-index:10;}
+.nav-left{display:flex;align-items:center;gap:14px;}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);}
+.icon-btn:hover{background:var(--bg);color:var(--text);}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 12px;width:280px;color:var(--text-secondary);}
+.search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%;color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.bell-wrap{position:relative;}
+.bell-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--danger);border-radius:50%;border:2px solid #fff;}
+.profile-btn{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:8px;border:1px solid var(--border);background:#fff;}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.profile-name{font-size:13px;font-weight:600;line-height:1.2;text-align:left;}
+.profile-role{font-size:11px;color:var(--text-secondary);}
+
+.dropdown{position:absolute;top:54px;right:16px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);width:200px;display:none;overflow:hidden;z-index:50;}
+.dropdown.show{display:block;}
+.dropdown a, .dropdown button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;font-size:13.5px;background:none;border:none;text-align:left;color:var(--text);}
+.dropdown a:hover, .dropdown button:hover{background:var(--bg);}
+.dropdown .div{height:1px;background:var(--border);margin:4px 0;}
+
+.content{padding:22px 26px 60px;flex:1;}
+.breadcrumb{font-size:12.5px;color:var(--text-secondary);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.breadcrumb b{color:var(--text);font-weight:600;}
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+.page-head h1{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+.page-head p{color:var(--text-secondary);font-size:13px;margin-top:2px;}
+
+/* ---------- CARDS / STATS ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.stat-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.stat-label{font-size:12.5px;color:var(--text-secondary);font-weight:600;}
+.stat-value{font-size:26px;font-weight:800;letter-spacing:-.02em;}
+.stat-delta{font-size:12px;font-weight:600;margin-top:4px;display:flex;align-items:center;gap:4px;}
+.up{color:var(--success);} .down{color:var(--danger);}
+
+.grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-head h3{font-size:14.5px;font-weight:700;}
+.card-head .muted{font-size:12px;color:var(--text-secondary);}
+
+.activity-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.act-title{font-size:13px;font-weight:600;}
+.act-time{font-size:11.5px;color:var(--text-secondary);}
+
+/* ---------- TABLE ---------- */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.tbl-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;width:220px;}
+.tbl-search input{border:none;background:transparent;outline:none;font-size:13px;width:100%;}
+.filter-select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;color:var(--text-secondary);}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:9px;width:fit-content;margin-bottom:16px;}
+.tab-btn{padding:7px 16px;border:none;background:transparent;border-radius:7px;font-size:13px;font-weight:600;color:var(--text-secondary);}
+.tab-btn.active{background:#fff;color:var(--primary);box-shadow:var(--shadow);}
+
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
+thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);font-weight:700;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);}
+tbody td{padding:13px 16px;font-size:13.5px;border-bottom:1px solid var(--border);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:#FAFBFF;}
+.cell-primary{font-weight:600;}
+.cell-sub{font-size:11.5px;color:var(--text-secondary);}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.badge-dot{width:6px;height:6px;border-radius:50%;}
+.badge-success{background:var(--success-bg);color:var(--success);}
+.badge-warning{background:var(--warning-bg);color:var(--accent-dark);}
+.badge-danger{background:var(--danger-bg);color:var(--danger);}
+.badge-info{background:var(--info-bg);color:var(--primary);}
+.badge-neutral{background:#F1F5F9;color:var(--text-secondary);}
+
+.row-actions{display:flex;gap:6px;}
+.mini-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);}
+.mini-btn:hover{background:var(--bg);color:var(--primary);}
+
+.avatar-sm{width:30px;height:30px;border-radius:50%;background:var(--primary-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;}
+.driver-cell{display:flex;align-items:center;gap:10px;}
+
+.progress-track{width:100%;height:6px;background:var(--border);border-radius:10px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:10px;}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md);}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
+.modal-head h3{font-size:16px;font-weight:700;}
+.modal-body{padding:20px 22px;}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+/* ---------- 403 ---------- */
+.err-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
+.err-code{font-size:96px;font-weight:800;color:var(--primary);letter-spacing:-.03em;line-height:1;}
+.err-page h2{font-size:20px;margin:10px 0 6px;}
+.err-page p{color:var(--text-secondary);margin-bottom:22px;max-width:360px;}
+
+/* ---------- DESIGN SYSTEM PAGE ---------- */
+.swatch{border-radius:10px;padding:16px;color:#fff;font-size:12px;font-weight:700;height:80px;display:flex;flex-direction:column;justify-content:flex-end;}
+.type-row{display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);}
+.type-row .lbl{width:90px;font-size:11.5px;color:var(--text-secondary);font-weight:600;}
+
+.hide{display:none !important;}
+@media(max-width:1024px){
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .grid-2, .grid-3{grid-template-columns:1fr;}
+  .sidebar{position:fixed;left:-240px;height:100vh;z-index:60;}
+  .sidebar.mobile-open{left:0;}
+  .search-box{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="auth-wrap" id="loginScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="mark" id="lucide-truck-logo"></div>
+      <span>TransitOps</span>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to manage your fleet operations</p>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="loginEmail" placeholder="you@company.com" value="admin@transitops.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" value="••••••••">
+    </div>
+    <a href="#" class="forgot-link" onclick="showScreen('forgotScreen');return false;">Forgot password?</a>
+    <div class="field">
+      <label>Sign in as (demo role switch)</label>
+      <select id="loginRole">
+        <option value="admin">Admin / Owner</option>
+        <option value="fleet_manager">Fleet Manager</option>
+        <option value="driver">Driver</option>
+        <option value="accountant">Accountant</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Sign in</button>
+    <p class="auth-foot">Don't have an account? <a href="#" onclick="showScreen('signupScreen');return false;">Create one</a></p>
+  </div>
+</div>
+
+<!-- ============ SIGNUP ============ -->
+<div class="auth-wrap hide" id="signupScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="mark" id="lucide-truck-logo2"></div>
+      <span>TransitOps</span>
+    </div>
+    <h1>Create account</h1>
+    <p class="sub">Admin-issued accounts get role access automatically</p>
+    <div class="field"><label>Full name</label><input type="text" placeholder="Sneha Patel"></div>
+    <div class="field"><label>Email address</label><input type="email" placeholder="you@company.com"></div>
+    <div class="field"><label>Password</label><input type="password" placeholder="Create a password"></div>
+    <div class="field">
+      <label>Role</label>
+      <select>
+        <option>Driver (default)</option>
+        <option>Fleet Manager</option>
+        <option>Accountant</option>
+        <option>Admin / Owner</option>
+      </select>
+      <div class="role-badge-list">
+        <span class="role-chip">Assigned by admin after review</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="showScreen('loginScreen')">Create account</button>
+    <p class="auth-foot">Already have an account? <a href="#" onclick="showScreen('loginScreen');return false;">Sign in</a></p>
+  </div>
+</div>
+
+<!-- ============ FORGOT PASSWORD ============ -->
+<div class="auth-wrap hide" id="forgotScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="mark" id="lucide-truck-logo3"></div>
+      <span>TransitOps</span>
+    </div>
+    <h1>Reset password</h1>
+    <p class="sub">Enter your email — we'll send a 6-digit code</p>
+    <div class="field"><label>Email address</label><input type="email" placeholder="you@company.com"></div>
+    <button class="btn btn-primary" onclick="showScreen('resetScreen')">Send reset code</button>
+    <p class="auth-foot"><a href="#" onclick="showScreen('loginScreen');return false;">← Back to sign in</a></p>
+  </div>
+</div>
+
+<!-- ============ RESET / OTP ============ -->
+<div class="auth-wrap hide" id="resetScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="mark" id="lucide-truck-logo4"></div>
+      <span>TransitOps</span>
+    </div>
+    <h1>Enter code</h1>
+    <p class="sub">We sent a 6-digit code to your email</p>
+    <div class="field" style="display:flex;gap:8px;">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="4">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="2">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="9">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="1">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="7">
+      <input maxlength="1" style="text-align:center;font-size:18px;" value="3">
+    </div>
+    <div class="field"><label>New password</label><input type="password" placeholder="Enter new password"></div>
+    <button class="btn btn-primary" onclick="showScreen('loginScreen')">Reset password</button>
+  </div>
+</div>
+
+<!-- ============ 403 ============ -->
+<div class="err-page hide" id="errScreen">
+  <div class="err-code">403</div>
+  <h2>Access denied</h2>
+  <p>Your role doesn't have permission to view this page. Contact your fleet admin if you think this is a mistake.</p>
+  <button class="btn btn-primary" style="width:auto;padding:10px 24px;" onclick="navigate('dashboard')">Back to dashboard</button>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="mark" id="lucide-truck-side"></div>
+      <span>TransitOps</span>
+    </div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-foot">
+      <div class="sb-role-tag" id="sbRoleTag">Admin</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="navbar">
+      <div class="nav-left">
+        <button class="icon-btn" onclick="toggleSidebar()" data-lucide="menu"></button>
+        <div class="search-box">
+          <span data-lucide="search" style="width:16px;height:16px;"></span>
+          <input placeholder="Search vehicles, drivers, trips...">
+        </div>
+      </div>
+      <div class="nav-right">
+        <button class="icon-btn bell-wrap" onclick="toggleDropdown('notifDrop')">
+          <span data-lucide="bell" style="width:18px;height:18px;"></span>
+          <span class="bell-dot"></span>
+        </button>
+        <div style="position:relative;">
+          <button class="profile-btn" onclick="toggleDropdown('profileDrop')">
+            <div class="avatar" id="navAvatar">A</div>
+            <div>
+              <div class="profile-name" id="navName">Sneha Patel</div>
+              <div class="profile-role" id="navRole">Admin</div>
+            </div>
+            <span data-lucide="chevron-down" style="width:14px;height:14px;color:#94a3b8;"></span>
+          </button>
+          <div class="dropdown" id="profileDrop">
+            <a href="#"><span data-lucide="user" style="width:15px;height:15px;"></span> Profile settings</a>
+            <a href="#"><span data-lucide="settings" style="width:15px;height:15px;"></span> Preferences</a>
+            <div class="div"></div>
+            <button onclick="logout()"><span data-lucide="log-out" style="width:15px;height:15px;"></span> Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ADD VEHICLE ============ -->
+<div class="modal-overlay" id="vehicleModal">
+  <div class="modal">
+    <div class="modal-head"><h3>Add vehicle</h3><button class="icon-btn" onclick="closeModal('vehicleModal')" data-lucide="x"></button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field"><label>Registration number</label><input placeholder="MH-01-XX-0000"></div>
+        <div class="field"><label>Vehicle name</label><input placeholder="e.g. Volvo FH16"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Vehicle type</label><select><option>Heavy Truck</option><option>Medium Truck</option><option>Light Truck</option></select></div>
+        <div class="field"><label>Max load capacity (kg)</label><input type="number" placeholder="10000"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Insurance expiry</label><input type="date"></div>
+        <div class="field"><label>Fitness expiry</label><input type="date"></div>
+      </div>
+      <div class="field"><label>Notes</label><input placeholder="Optional notes"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('vehicleModal')">Cancel</button>
+      <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="closeModal('vehicleModal')">Save vehicle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function safeIcons(){ try{ if(typeof lucide !== 'undefined') lucide.createIcons(); }catch(e){ console.warn('icon render skipped', e); } }
+safeIcons();
+
+/* ---------------- DATA ---------------- */
+const roleLabels = {admin:'Admin / Owner', fleet_manager:'Fleet Manager', driver:'Driver', accountant:'Accountant'};
+let currentRole = 'admin';
+
+const navConfig = {
+  admin: [
+    {section:'Overview', links:[['dashboard','layout-dashboard','Dashboard']]},
+    {section:'Operations', links:[['fleet','truck','Fleet Management'],['drivers','users','Driver Management'],['trips','route','Trip Management']]},
+    {section:'Costs', links:[['fuel','fuel','Fuel Logs'],['maintenance','wrench','Maintenance'],['expenses','receipt','Expenses']]},
+    {section:'Insights', links:[['reports','bar-chart-3','Reports & Analytics'],['design','palette','Design System']]}
+  ],
+  fleet_manager: [
+    {section:'Overview', links:[['dashboard','layout-dashboard','Dashboard']]},
+    {section:'Operations', links:[['fleet','truck','Fleet Management'],['drivers','users','Driver Management'],['trips','route','Trip Management']]},
+    {section:'Costs', links:[['fuel','fuel','Fuel Logs'],['maintenance','wrench','Maintenance']]}
+  ],
+  driver: [
+    {section:'My Work', links:[['dashboard','layout-dashboard','Dashboard'],['trips','route','My Trips'],['fuel','fuel','Fuel Logs']]},
+    {section:'Account', links:[['profile','user','My Profile']]}
+  ],
+  accountant: [
+    {section:'Overview', links:[['dashboard','layout-dashboard','Dashboard']]},
+    {section:'Finance', links:[['expenses','receipt','Expenses'],['fuel','fuel','Fuel Costs'],['reports','bar-chart-3','Reports & Analytics']]}
+  ]
+};
+
+const vehicles = [
+  {reg:'MH-01-AB-1234', name:'Volvo FH16', type:'Heavy Truck', status:'available', insurance:'2026-08-20', driver:'Rajesh Kumar'},
+  {reg:'MH-01-CD-5678', name:'Tata Prima', type:'Heavy Truck', status:'on_trip', insurance:'2026-11-30', driver:'Amit Patel'},
+  {reg:'MH-01-EF-9012', name:'Ashok Leyland Dost', type:'Light Truck', status:'available', insurance:'2026-07-01', driver:'—'},
+  {reg:'MH-01-GH-3456', name:'Mahindra Blazo', type:'Medium Truck', status:'in_shop', insurance:'2026-12-15', driver:'—'},
+  {reg:'MH-01-IJ-7890', name:'Eicher Pro 3015', type:'Medium Truck', status:'available', insurance:'2027-02-10', driver:'Vikram Singh'},
+  {reg:'MH-01-KL-2345', name:'BharatBenz 1214R', type:'Medium Truck', status:'available', insurance:'2027-03-05', driver:'—'}
+];
+const drivers = [
+  {name:'Rajesh Kumar', license:'DL-0420110012345', status:'available', vehicle:'MH-01-AB-1234', expiry:'2027-06-15', score:94.5},
+  {name:'Amit Patel', license:'DL-0420110023456', status:'on_trip', vehicle:'MH-01-CD-5678', expiry:'2026-11-20', score:88.0},
+  {name:'Suresh Verma', license:'DL-0420110034567', status:'available', vehicle:'—', expiry:'2026-08-30', score:91.5},
+  {name:'Vikram Singh', license:'DL-0420110045678', status:'available', vehicle:'MH-01-IJ-7890', expiry:'2028-02-10', score:96.0},
+  {name:'Deepak Sharma', license:'DL-0420110056789', status:'off_duty', vehicle:'—', expiry:'2027-09-05', score:85.5}
+];
+const trips = [
+  {id:'TRP-0001', route:'Mumbai → Pune', driver:'Amit Patel', vehicle:'MH-01-CD-5678', status:'in_transit', dist:'155 km'},
+  {id:'TRP-0002', route:'Mumbai → Nashik', driver:'Rajesh Kumar', vehicle:'MH-01-AB-1234', status:'completed', dist:'182 km'},
+  {id:'TRP-0003', route:'Pune → Bangalore', driver:'Vikram Singh', vehicle:'MH-01-IJ-7890', status:'completed', dist:'850 km'},
+  {id:'TRP-0004', route:'Mumbai → Ahmedabad', driver:'Unassigned', vehicle:'—', status:'planned', dist:'520 km'},
+  {id:'TRP-0005', route:'Pune → Hyderabad', driver:'Unassigned', vehicle:'—', status:'planned', dist:'560 km'}
+];
+const fuelLogs = [
+  {date:'Jul 10', vehicle:'MH-01-CD-5678', liters:180, cost:16200, odo:89000},
+  {date:'Jul 07', vehicle:'MH-01-AB-1234', liters:220, cost:19800, odo:145000},
+  {date:'Jul 02', vehicle:'MH-01-IJ-7890', liters:150, cost:13500, odo:55000},
+  {date:'Jun 27', vehicle:'MH-01-EF-9012', liters:95, cost:8550, odo:45000},
+  {date:'Jun 22', vehicle:'MH-01-KL-2345', liters:200, cost:18000, odo:63000}
+];
+const maintenance = [
+  {vehicle:'MH-01-GH-3456', type:'Engine Service', cost:45000, status:'in_progress', due:'—'},
+  {vehicle:'MH-01-AB-1234', type:'Tyre Replacement', cost:32000, status:'completed', due:'—'},
+  {vehicle:'MH-01-CD-5678', type:'Brake Service', cost:8500, status:'completed', due:'—'},
+  {vehicle:'MH-01-EF-9012', type:'General Inspection', cost:0, status:'scheduled', due:'Jul 18'}
+];
+const expenses = [
+  {type:'Toll', vehicle:'MH-01-CD-5678', amount:2400, date:'Jul 10', status:'approved'},
+  {type:'Toll', vehicle:'MH-01-AB-1234', amount:3800, date:'Jul 09', status:'approved'},
+  {type:'Parking', vehicle:'MH-01-IJ-7890', amount:450, date:'Jul 07', status:'pending'},
+  {type:'Insurance', vehicle:'MH-01-EF-9012', amount:12500, date:'Jun 12', status:'approved'}
+];
+
+/* ---------------- STATUS HELPERS ---------------- */
+function statusBadge(status){
+  const map = {
+    available:['badge-success','Available'], on_trip:['badge-info','On Trip'], in_shop:['badge-warning','In Shop'], retired:['badge-neutral','Retired'],
+    off_duty:['badge-neutral','Off Duty'], suspended:['badge-danger','Suspended'],
+    planned:['badge-neutral','Planned'], dispatched:['badge-info','Dispatched'], in_transit:['badge-info','In Transit'], completed:['badge-success','Completed'], cancelled:['badge-danger','Cancelled'],
+    scheduled:['badge-warning','Scheduled'], in_progress:['badge-info','In Progress'],
+    approved:['badge-success','Approved'], pending:['badge-warning','Pending'], rejected:['badge-danger','Rejected']
+  };
+  const [cls,label] = map[status] || ['badge-neutral', status];
+  return `<span class="badge ${cls}"><span class="badge-dot" style="background:currentColor"></span>${label}</span>`;
+}
+function initials(name){ return name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase(); }
+
+/* ---------------- SCREENS ---------------- */
+function showScreen(id){
+  ['loginScreen','signupScreen','forgotScreen','resetScreen'].forEach(s=>document.getElementById(s).classList.add('hide'));
+  document.getElementById(id).classList.remove('hide');
+}
+
+function doLogin(){
+  currentRole = document.getElementById('loginRole').value;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('navAvatar').textContent = currentRole==='driver' ? 'RK' : 'SP';
+  document.getElementById('navName').textContent = currentRole==='driver' ? 'Rajesh Kumar' : 'Sneha Patel';
+  document.getElementById('navRole').textContent = roleLabels[currentRole];
+  document.getElementById('sbRoleTag').textContent = 'Logged in as ' + roleLabels[currentRole];
+  buildSidebar();
+  navigate('dashboard');
+}
+function logout(){
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').style.display='flex';
+  showScreen('loginScreen');
+  toggleDropdown('profileDrop', true);
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('sidebar').classList.toggle('mobile-open'); }
+function toggleDropdown(id, forceClose){
+  const el = document.getElementById(id);
+  if(forceClose){ el.classList.remove('show'); return; }
+  el.classList.toggle('show');
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.nav-right')){
+    document.querySelectorAll('.dropdown').forEach(d=>d.classList.remove('show'));
+  }
+});
+
+function buildSidebar(){
+  const cfg = navConfig[currentRole];
+  let html = '';
+  cfg.forEach(sec=>{
+    html += `<div class="sb-section-label">${sec.section}</div>`;
+    sec.links.forEach(([key,icon,label])=>{
+      html += `<a class="sb-link" data-page="${key}" onclick="navigate('${key}')"><span data-lucide="${icon}"></span><span>${label}</span></a>`;
+    });
+  });
+  document.getElementById('sbNav').innerHTML = html;
+  safeIcons();
+}
+
+function setActiveLink(page){
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.toggle('active', l.dataset.page===page));
+}
+
+/* ---------------- ROUTER ---------------- */
+const allowedPages = {
+  admin: ['dashboard','fleet','drivers','trips','fuel','maintenance','expenses','reports','design'],
+  fleet_manager: ['dashboard','fleet','drivers','trips','fuel','maintenance'],
+  driver: ['dashboard','trips','fuel','profile'],
+  accountant: ['dashboard','expenses','fuel','reports']
+};
+
+function navigate(page){
+  if(!allowedPages[currentRole].includes(page)){
+    document.getElementById('app').classList.remove('active');
+    document.getElementById('errScreen').classList.remove('hide');
+    return;
+  }
+  document.getElementById('errScreen').classList.add('hide');
+  document.getElementById('app').classList.add('active');
+  setActiveLink(page);
+  const renderers = {dashboard:renderDashboard, fleet:renderFleet, drivers:renderDrivers, trips:renderTrips, fuel:renderFuel, maintenance:renderMaintenance, expenses:renderExpenses, reports:renderReports, design:renderDesign, profile:renderProfile};
+  document.getElementById('content').innerHTML = renderers[page]();
+  safeIcons();
+  if(page==='dashboard') drawCharts();
+  if(page==='reports') drawReportCharts();
+}
+
+/* ---------------- PAGE: DASHBOARD ---------------- */
+function renderDashboard(){
+  return `
+  <div class="breadcrumb"><span>TransitOps</span> / <b>Dashboard</b></div>
+  <div class="page-head"><div><h1>Good morning, ${currentRole==='driver'?'Rajesh':'Sneha'} 👋</h1><p>Here's what's happening with your fleet today.</p></div>
+  ${currentRole!=='driver'&&currentRole!=='accountant'?'<button class="btn btn-accent" onclick="openModal(\'vehicleModal\')"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Vehicle</button>':''}
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-top"><span class="stat-label">Total Vehicles</span><div class="stat-icon" style="background:var(--info-bg);color:var(--primary);"><span data-lucide="truck" style="width:17px;height:17px;"></span></div></div><div class="stat-value">6</div><div class="stat-delta up"><span data-lucide="arrow-up" style="width:12px;height:12px;"></span> 2 added this month</div></div>
+    <div class="stat-card"><div class="stat-top"><span class="stat-label">Active Trips</span><div class="stat-icon" style="background:var(--warning-bg);color:var(--accent-dark);"><span data-lucide="route" style="width:17px;height:17px;"></span></div></div><div class="stat-value">1</div><div class="stat-delta up"><span data-lucide="arrow-up" style="width:12px;height:12px;"></span> On schedule</div></div>
+    <div class="stat-card"><div class="stat-top"><span class="stat-label">Fuel Cost (Month)</span><div class="stat-icon" style="background:var(--danger-bg);color:var(--danger);"><span data-lucide="fuel" style="width:17px;height:17px;"></span></div></div><div class="stat-value">₹76,050</div><div class="stat-delta down"><span data-lucide="arrow-down" style="width:12px;height:12px;"></span> 4% vs last month</div></div>
+    <div class="stat-card"><div class="stat-top"><span class="stat-label">Maintenance Due</span><div class="stat-icon" style="background:var(--info-bg);color:var(--primary);"><span data-lucide="wrench" style="width:17px;height:17px;"></span></div></div><div class="stat-value">2</div><div class="stat-delta"><span style="color:var(--text-secondary);">1 vehicle in shop</span></div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Fuel cost trend</h3><span class="muted">Last 6 weeks</span></div>
+      <canvas id="fuelTrendChart" height="140"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Expense breakdown</h3><span class="muted">This month</span></div>
+      <canvas id="expenseDonutChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Vehicle utilization</h3><span class="muted">By type</span></div>
+      <canvas id="utilBarChart" height="140"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Recent activity</h3></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--success);"></div><div><div class="act-title">Trip TRP-0002 completed</div><div class="act-time">2 hours ago</div></div></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--accent);"></div><div><div class="act-title">MH-01-GH-3456 entered maintenance</div><div class="act-time">5 hours ago</div></div></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--primary-light);"></div><div><div class="act-title">Fuel log added for MH-01-CD-5678</div><div class="act-time">Yesterday</div></div></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--danger);"></div><div><div class="act-title">Insurance expiring soon — MH-01-EF-9012</div><div class="act-time">2 days ago</div></div></div>
+    </div>
+  </div>`;
+}
+
+function drawCharts(){
+  const c1 = document.getElementById('fuelTrendChart');
+  if(c1 && typeof Chart!=='undefined') new Chart(c1, {type:'line', data:{labels:['W1','W2','W3','W4','W5','W6'], datasets:[{data:[52000,61000,58000,70000,66000,76050], borderColor:'#1E3A8A', backgroundColor:'rgba(30,58,138,.08)', fill:true, tension:.35, pointRadius:3}]}, options:{plugins:{legend:{display:false}}, scales:{y:{grid:{color:'#F1F5F9'}}, x:{grid:{display:false}}}}});
+  const c2 = document.getElementById('expenseDonutChart');
+  if(c2 && typeof Chart!=='undefined') new Chart(c2, {type:'doughnut', data:{labels:['Fuel','Toll','Maintenance','Insurance','Parking'], datasets:[{data:[45,20,18,12,5], backgroundColor:['#1E3A8A','#F59E0B','#3B82F6','#16A34A','#94A3B8']}]}, options:{plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}}}});
+  const c3 = document.getElementById('utilBarChart');
+  if(c3 && typeof Chart!=='undefined') new Chart(c3, {type:'bar', data:{labels:['Heavy','Medium','Light'], datasets:[{data:[85,62,40], backgroundColor:['#1E3A8A','#3B82F6','#F59E0B'], borderRadius:6}]}, options:{plugins:{legend:{display:false}}, scales:{y:{grid:{color:'#F1F5F9'}, max:100}, x:{grid:{display:false}}}}});
+}
+
+/* ---------------- PAGE: FLEET ---------------- */
+function renderFleet(){
+  const canWrite = currentRole==='admin'||currentRole==='fleet_manager';
+  const rows = vehicles.map(v=>`
+    <tr>
+      <td><div class="cell-primary">${v.name}</div><div class="cell-sub">${v.reg}</div></td>
+      <td>${v.type}</td>
+      <td>${statusBadge(v.status)}</td>
+      <td>${v.driver}</td>
+      <td>${v.insurance}</td>
+      ${canWrite?`<td><div class="row-actions"><button class="mini-btn" data-lucide="eye"></button><button class="mini-btn" data-lucide="pencil"></button><button class="mini-btn" data-lucide="trash-2"></button></div></td>`:''}
+    </tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Fleet Management</b></div>
+  <div class="page-head"><div><h1>Fleet Management</h1><p>${vehicles.length} vehicles registered</p></div>
+  ${canWrite?`<button class="btn btn-accent" onclick="openModal('vehicleModal')"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Vehicle</button>`:''}</div>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="tbl-search"><span data-lucide="search" style="width:14px;height:14px;"></span><input placeholder="Search vehicles..."></div>
+      <select class="filter-select"><option>All types</option><option>Heavy Truck</option><option>Medium Truck</option><option>Light Truck</option></select>
+      <select class="filter-select"><option>All status</option><option>Available</option><option>On Trip</option><option>In Shop</option></select>
+    </div>
+  </div>
+  <table><thead><tr><th>Vehicle</th><th>Type</th><th>Status</th><th>Driver</th><th>Insurance Expiry</th>${canWrite?'<th>Actions</th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: DRIVERS ---------------- */
+function renderDrivers(){
+  const canWrite = currentRole==='admin'||currentRole==='fleet_manager';
+  const rows = drivers.map(d=>`
+    <tr>
+      <td><div class="driver-cell"><div class="avatar-sm">${initials(d.name)}</div><div><div class="cell-primary">${d.name}</div><div class="cell-sub">${d.license}</div></div></div></td>
+      <td>${statusBadge(d.status)}</td>
+      <td>${d.vehicle}</td>
+      <td>${d.expiry} ${new Date(d.expiry) < new Date('2026-09-01') ? statusBadge('pending') : ''}</td>
+      <td>${d.score}</td>
+      ${canWrite?`<td><div class="row-actions"><button class="mini-btn" data-lucide="eye"></button><button class="mini-btn" data-lucide="pencil"></button></div></td>`:''}
+    </tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Driver Management</b></div>
+  <div class="page-head"><div><h1>Driver Management</h1><p>${drivers.length} drivers on record</p></div>
+  ${canWrite?`<button class="btn btn-accent"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Driver</button>`:''}</div>
+  <div class="toolbar"><div class="toolbar-left"><div class="tbl-search"><span data-lucide="search" style="width:14px;height:14px;"></span><input placeholder="Search drivers..."></div><select class="filter-select"><option>All status</option></select></div></div>
+  <table><thead><tr><th>Driver</th><th>Status</th><th>Assigned Vehicle</th><th>License Expiry</th><th>Safety Score</th>${canWrite?'<th>Actions</th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: TRIPS ---------------- */
+function renderTrips(){
+  const canWrite = currentRole==='admin'||currentRole==='fleet_manager';
+  const filtered = currentRole==='driver' ? trips.filter(t=>t.driver==='Rajesh Kumar') : trips;
+  const rows = filtered.map(t=>`
+    <tr><td class="cell-primary">${t.id}</td><td>${t.route}</td><td>${t.driver}</td><td>${t.vehicle}</td><td>${t.dist}</td><td>${statusBadge(t.status)}</td>
+    <td><div class="row-actions"><button class="mini-btn" data-lucide="eye"></button>${canWrite?`<button class="mini-btn" data-lucide="pencil"></button>`:''}</div></td></tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Trip Management</b></div>
+  <div class="page-head"><div><h1>${currentRole==='driver'?'My Trips':'Trip Management'}</h1><p>Track and manage all fleet trips</p></div>
+  ${canWrite?`<button class="btn btn-accent"><span data-lucide="plus" style="width:16px;height:16px;"></span> Create Trip</button>`:''}</div>
+  <div class="tabs"><button class="tab-btn active">All</button><button class="tab-btn">Pending</button><button class="tab-btn">Ongoing</button><button class="tab-btn">Completed</button></div>
+  <table><thead><tr><th>Trip ID</th><th>Route</th><th>Driver</th><th>Vehicle</th><th>Distance</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: FUEL ---------------- */
+function renderFuel(){
+  const rows = fuelLogs.map(f=>`<tr><td>${f.date}</td><td class="cell-primary">${f.vehicle}</td><td>${f.liters} L</td><td>₹${f.cost.toLocaleString()}</td><td>${f.odo.toLocaleString()} km</td></tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Fuel Logs</b></div>
+  <div class="page-head"><div><h1>Fuel Logs</h1><p>Track fuel consumption across the fleet</p></div>
+  <button class="btn btn-accent"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Fuel Log</button></div>
+  <div class="grid-3">
+    <div class="card"><span class="stat-label">Total Fuel Cost</span><div class="stat-value" style="margin-top:6px;">₹76,050</div></div>
+    <div class="card"><span class="stat-label">Total Liters</span><div class="stat-value" style="margin-top:6px;">845 L</div></div>
+    <div class="card"><span class="stat-label">Avg. Mileage</span><div class="stat-value" style="margin-top:6px;">6.4 km/L</div></div>
+  </div>
+  <table><thead><tr><th>Date</th><th>Vehicle</th><th>Liters</th><th>Cost</th><th>Odometer</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: MAINTENANCE ---------------- */
+function renderMaintenance(){
+  const rows = maintenance.map(m=>`<tr><td class="cell-primary">${m.vehicle}</td><td>${m.type}</td><td>₹${m.cost.toLocaleString()}</td><td>${statusBadge(m.status)}</td><td>${m.due}</td><td><div class="row-actions"><button class="mini-btn" data-lucide="pencil"></button></div></td></tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Maintenance</b></div>
+  <div class="page-head"><div><h1>Maintenance</h1><p>Scheduled and completed service records</p></div>
+  <button class="btn btn-accent"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Record</button></div>
+  <table><thead><tr><th>Vehicle</th><th>Service Type</th><th>Cost</th><th>Status</th><th>Due</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: EXPENSES ---------------- */
+function renderExpenses(){
+  const canApprove = currentRole==='admin'||currentRole==='accountant';
+  const rows = expenses.map(e=>`<tr><td class="cell-primary">${e.type}</td><td>${e.vehicle}</td><td>₹${e.amount.toLocaleString()}</td><td>${e.date}</td><td>${statusBadge(e.status)}</td>
+    ${canApprove&&e.status==='pending'?`<td><div class="row-actions"><button class="mini-btn" style="color:var(--success);" data-lucide="check"></button><button class="mini-btn" style="color:var(--danger);" data-lucide="x"></button></div></td>`:'<td></td>'}</tr>`).join('');
+  return `
+  <div class="breadcrumb">TransitOps / <b>Expenses</b></div>
+  <div class="page-head"><div><h1>Expenses</h1><p>All fleet-related expenses</p></div>
+  <button class="btn btn-accent"><span data-lucide="plus" style="width:16px;height:16px;"></span> Add Expense</button></div>
+  <table><thead><tr><th>Category</th><th>Vehicle</th><th>Amount</th><th>Date</th><th>Status</th><th>${canApprove?'Approve':''}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- PAGE: REPORTS ---------------- */
+function renderReports(){
+  return `
+  <div class="breadcrumb">TransitOps / <b>Reports & Analytics</b></div>
+  <div class="page-head"><div><h1>Reports & Analytics</h1><p>Build custom reports across your fleet data</p></div>
+  <div style="display:flex;gap:8px;"><button class="btn btn-ghost"><span data-lucide="file-text" style="width:15px;height:15px;"></span> Export PDF</button><button class="btn btn-ghost"><span data-lucide="sheet" style="width:15px;height:15px;"></span> Export Excel</button></div></div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="toolbar" style="margin:0;"><div class="toolbar-left">
+      <select class="filter-select"><option>Last 30 days</option><option>Last 90 days</option><option>This year</option></select>
+      <select class="filter-select"><option>All vehicles</option></select>
+      <select class="filter-select"><option>All drivers</option></select>
+      <button class="btn btn-primary" style="width:auto;padding:8px 16px;">Apply</button>
+    </div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-head"><h3>Cost breakdown by category</h3></div><canvas id="repPie" height="150"></canvas></div>
+    <div class="card"><div class="card-head"><h3>Monthly spend trend</h3></div><canvas id="repLine" height="150"></canvas></div>
+  </div>
+  <div class="card"><div class="card-head"><h3>Vehicle-wise cost comparison</h3></div><canvas id="repBar" height="90"></canvas></div>`;
+}
+function drawReportCharts(){
+  const p = document.getElementById('repPie');
+  if(p && typeof Chart!=='undefined') new Chart(p, {type:'pie', data:{labels:['Fuel','Maintenance','Toll','Insurance'], datasets:[{data:[45,25,20,10], backgroundColor:['#1E3A8A','#3B82F6','#F59E0B','#16A34A']}]}, options:{plugins:{legend:{position:'bottom'}}}});
+  const l = document.getElementById('repLine');
+  if(l && typeof Chart!=='undefined') new Chart(l, {type:'line', data:{labels:['Feb','Mar','Apr','May','Jun','Jul'], datasets:[{data:[120000,135000,128000,142000,138000,151000], borderColor:'#F59E0B', backgroundColor:'rgba(245,158,11,.1)', fill:true, tension:.3}]}, options:{plugins:{legend:{display:false}}}});
+  const b = document.getElementById('repBar');
+  if(b && typeof Chart!=='undefined') new Chart(b, {type:'bar', data:{labels:vehicles.map(v=>v.reg), datasets:[{data:[42000,38000,15000,52000,29000,31000], backgroundColor:'#1E3A8A', borderRadius:6}]}, options:{plugins:{legend:{display:false}}}});
+}
+
+/* ---------------- PAGE: DESIGN SYSTEM ---------------- */
+function renderDesign(){
+  return `
+  <div class="breadcrumb">TransitOps / <b>Design System</b></div>
+  <div class="page-head"><div><h1>Design System</h1><p>Color tokens, typography, and component library</p></div></div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head"><h3>Color tokens</h3></div>
+    <div class="grid-3" style="margin-bottom:0;">
+      <div class="swatch" style="background:#1E3A8A;">Primary<br>#1E3A8A</div>
+      <div class="swatch" style="background:#F59E0B;">Accent<br>#F59E0B</div>
+      <div class="swatch" style="background:#16A34A;">Success<br>#16A34A</div>
+      <div class="swatch" style="background:#DC2626;">Danger<br>#DC2626</div>
+      <div class="swatch" style="background:#64748B;">Text Secondary<br>#64748B</div>
+      <div class="swatch" style="background:#1E293B;">Text Primary<br>#1E293B</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head"><h3>Typography</h3></div>
+    <div class="type-row"><span class="lbl">H1 / 22px</span><span style="font-size:22px;font-weight:800;">Fleet Management</span></div>
+    <div class="type-row"><span class="lbl">H3 / 14.5px</span><span style="font-size:14.5px;font-weight:700;">Card heading</span></div>
+    <div class="type-row"><span class="lbl">Body / 14px</span><span style="font-size:14px;">Regular body text for tables and content</span></div>
+    <div class="type-row"><span class="lbl">Caption / 12px</span><span style="font-size:12px;color:var(--text-secondary);">Secondary / muted caption text</span></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head"><h3>Buttons</h3></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="width:auto;padding:10px 20px;">Primary</button>
+      <button class="btn btn-accent" style="width:auto;padding:10px 20px;">Accent</button>
+      <button class="btn btn-ghost" style="width:auto;padding:10px 20px;">Ghost</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Status badges</h3></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">${statusBadge('available')}${statusBadge('on_trip')}${statusBadge('in_shop')}${statusBadge('completed')}${statusBadge('pending')}${statusBadge('cancelled')}</div>
+  </div>`;
+}
+
+/* ---------------- PAGE: PROFILE (driver) ---------------- */
+function renderProfile(){
+  return `
+  <div class="breadcrumb">TransitOps / <b>My Profile</b></div>
+  <div class="page-head"><div><h1>My Profile</h1><p>Your driver information</p></div></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Details</h3></div>
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:16px;"><div class="avatar" style="width:56px;height:56px;font-size:18px;">RK</div><div><div style="font-weight:700;font-size:16px;">Rajesh Kumar</div><div class="cell-sub">DL-0420110012345</div></div></div>
+      <div style="display:grid;gap:10px;font-size:13.5px;">
+        <div style="display:flex;justify-content:space-between;"><span class="cell-sub">License expiry</span><span>2027-06-15</span></div>
+        <div style="display:flex;justify-content:space-between;"><span class="cell-sub">Assigned vehicle</span><span>MH-01-AB-1234</span></div>
+        <div style="display:flex;justify-content:space-between;"><span class="cell-sub">Safety score</span><span>94.5</span></div>
+        <div style="display:flex;justify-content:space-between;"><span class="cell-sub">Status</span>${statusBadge('available')}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Trip history</h3></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--success);"></div><div><div class="act-title">Mumbai → Nashik — completed</div><div class="act-time">2 days ago · 182 km</div></div></div>
+      <div class="activity-item"><div class="act-dot" style="background:var(--primary-light);"></div><div><div class="act-title">Mumbai → Pune — in transit</div><div class="act-time">4 hours ago</div></div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- MODAL ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* init truck icons in auth screens */
+['lucide-truck-logo','lucide-truck-logo2','lucide-truck-logo3','lucide-truck-logo4','lucide-truck-side'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>';
+});
+
+/* fallback: ensure login button always works */
+window.addEventListener('DOMContentLoaded', function(){
+  const btn = document.querySelector('#loginScreen .btn-primary');
+  if(btn) btn.addEventListener('click', function(){ if(typeof doLogin==='function') doLogin(); });
+});
+</script>
+</body>
+</html>
